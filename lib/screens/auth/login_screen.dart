@@ -1,16 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
-import '../../core/constants/app_colors.dart';
+import '../../services/auth_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_input.dart';
 import '../../widgets/primary_button.dart';
-import '../../routes.dart';
 
 /// Pantalla de login completamente rediseñada para TruekApp
 /// Incluye: animaciones, validación, responsividad, y UI moderna minimalista
@@ -34,13 +31,17 @@ class _LoginScreenState extends State<LoginScreen>
 
   // Controladores de animación
   late AnimationController _fadeInController;
-  late AnimationController _scaleLogoController;
+
   late AnimationController _slideInputsController;
+  late AnimationController _logoController;
   late AnimationController _lottieController;
 
   late Animation<double> _fadeInAnimation;
-  late Animation<double> _scaleLogoAnimation;
+
   late Animation<Offset> _slideInputsAnimation;
+  late Animation<double> _logoOpacityAnimation;
+  late Animation<Offset> _logoSlideAnimation;
+  late Animation<double> _logoScaleAnimation;
 
   @override
   void initState() {
@@ -59,13 +60,26 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(parent: _fadeInController, curve: Curves.easeInOut),
     );
 
-    // Animación Scale para el logo (más lenta, efecto más elegante)
-    _scaleLogoController = AnimationController(
-      duration: const Duration(milliseconds: 1400),
+    // (El logo utiliza _logoController para su entrada animada)
+
+    // Controlador específico para la entrada del logo (intro tipo "Marvel")
+    _logoController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _scaleLogoAnimation = Tween<double>(begin: 0.5, end: 1).animate(
-      CurvedAnimation(parent: _scaleLogoController, curve: Curves.elasticOut),
+
+    _logoOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeIn));
+
+    _logoSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.18),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeOut));
+
+    _logoScaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.easeOutBack),
     );
 
     // Animación Slide para inputs (más lenta)
@@ -73,24 +87,25 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
-    _slideInputsAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideInputsController, curve: Curves.easeInOut),
-    );
+    _slideInputsAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _slideInputsController,
+            curve: Curves.easeInOut,
+          ),
+        );
 
     // Controlador para Lottie
-    _lottieController = AnimationController(
-      vsync: this,
-    );
+    _lottieController = AnimationController(vsync: this);
   }
 
   void _startAnimations() {
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) {
+        // Lanzamos la intro del logo primero
+        _logoController.forward();
+        // (no se usa un scaleLogoController adicional — _logoController maneja la entrada)
         _fadeInController.forward();
-        _scaleLogoController.forward();
       }
     });
 
@@ -104,9 +119,9 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _fadeInController.dispose();
-    _scaleLogoController.dispose();
     _slideInputsController.dispose();
     _lottieController.dispose();
+    _logoController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -149,8 +164,8 @@ class _LoginScreenState extends State<LoginScreen>
       _errorMessage = '';
     });
 
-    // Inicia animación de Lottie
-    _lottieController.repeat();
+    // Inicia animación de Lottie (usar period explícito para evitar excepción en web)
+    _lottieController.repeat(period: const Duration(milliseconds: 1200));
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -210,38 +225,22 @@ class _LoginScreenState extends State<LoginScreen>
 
   /// Construye el logo animado con flechas de trueque
   Widget _buildAnimatedLogo() {
-    return ScaleTransition(
-      scale: _scaleLogoAnimation,
-      child: Container(
-        width: 20.w,
-        height: 20.w,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Center(
-          child: Icon(
-            Icons.swap_horiz_outlined,
-            size: 12.w,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
-    );
-  }
+    // Solo el icono (sin fondo). Tamaño protagonista.
+    const double iconSize = 100.0; // puedes ajustar entre 80-120
 
-  /// Construye la frase principal
-  Widget _buildMainPhrase() {
     return FadeTransition(
-      opacity: _fadeInAnimation,
-      child: Text(
-        'Volvé a darle\nvalor a tus cosas.',
-        textAlign: TextAlign.center,
-        style: GoogleFonts.inter(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          color: AppColors.secondary,
-          height: 1.3,
+      opacity: _logoOpacityAnimation,
+      child: SlideTransition(
+        position: _logoSlideAnimation,
+        child: ScaleTransition(
+          scale: _logoScaleAnimation,
+          child: Center(
+            child: Icon(
+              Icons.swap_horiz_outlined,
+              size: iconSize,
+              color: AppColors.primary,
+            ),
+          ),
         ),
       ),
     );
@@ -277,9 +276,66 @@ class _LoginScreenState extends State<LoginScreen>
                 validator: _validatePassword,
                 prefixIcon: Icons.lock_outline,
               ),
+              // Forgot password link
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _showForgotPasswordDialog,
+                  child: Text(
+                    'Olvidé mi contraseña',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    final _emailCtrl = TextEditingController(
+      text: _emailController.text.trim(),
+    );
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restablecer contraseña'),
+        content: TextField(
+          controller: _emailCtrl,
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final email = _emailCtrl.text.trim();
+              if (email.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Introduce tu email')),
+                );
+                return;
+              }
+              Navigator.of(ctx).pop();
+              try {
+                final msg = await AuthService().forgotPassword(email);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(msg)));
+              } catch (e) {
+                final msg = e.toString().replaceAll('Exception: ', '');
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(msg)));
+              }
+            },
+            child: const Text('Enviar'),
+          ),
+        ],
       ),
     );
   }
@@ -372,14 +428,9 @@ class _LoginScreenState extends State<LoginScreen>
             return SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 6.w,
-                    vertical: 2.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: 600),
@@ -410,13 +461,13 @@ class _LoginScreenState extends State<LoginScreen>
                               FadeTransition(
                                 opacity: _fadeInAnimation,
                                 child: Text(
-                                  'Volvé a darle\nvalor a tus cosas.',
+                                  'Volvé a darle valor\n a tus cosas.',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.inter(
-                                    fontSize: 34,
+                                    fontSize: 30,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.secondary,
-                                    height: 1.2,
+                                    height: 1.18,
                                   ),
                                 ),
                               ),
@@ -426,10 +477,10 @@ class _LoginScreenState extends State<LoginScreen>
                               FadeTransition(
                                 opacity: _fadeInAnimation,
                                 child: Text(
-                                  'Iniciá sesión para volver a conectar con tu comunidad',
+                                  'Iniciá sesión para volver a conectar con tu comunidad.',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.inter(
-                                    fontSize: 14,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w400,
                                     color: AppColors.neutralDark,
                                   ),

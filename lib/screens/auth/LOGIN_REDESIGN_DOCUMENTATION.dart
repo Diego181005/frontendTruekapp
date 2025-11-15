@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 /// Archivo de documentación del rediseño de Login para TruekApp
 /// 
