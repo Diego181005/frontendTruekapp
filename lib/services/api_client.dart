@@ -18,6 +18,14 @@ class ApiClient {
         headers: {'Content-Type': 'application/json'},
       ),
     );
+    // Add logging interceptor to help debugging request/response payloads
+    dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        requestHeader: true,
+      ),
+    );
   }
 
   void setToken(String token) {

@@ -1,5 +1,6 @@
 // lib/providers/auth_provider.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../dto/auth/user_info_dto.dart';
 import '../dto/auth/user_login_dto.dart';
 import '../dto/auth/user_register_dto.dart';
@@ -29,12 +30,44 @@ class AuthProvider extends ChangeNotifier {
       }
 
       ApiClient().setToken(tokenDto.token!); // ! seguro porque ya verificamos
+
+      // Persistir token localmente
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', tokenDto.token!);
+      } catch (_) {
+        // No crítico: si falla el guardado, continuamos sin bloquear login
+      }
+
+      // Obtener información del usuario
       user = await _service.getMe();
     } catch (e) {
       rethrow;
     } finally {
       isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Intenta cargar token almacenado y obtener info del usuario.
+  /// Devuelve true si logró restaurar sesión.
+  Future<bool> tryAutoLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) return false;
+
+      ApiClient().setToken(token);
+      user = await _service.getMe();
+      notifyListeners();
+      return true;
+    } catch (_) {
+      // Si algo falla, limpiar token local
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('auth_token');
+      } catch (_) {}
+      return false;
     }
   }
 
@@ -55,6 +88,8 @@ class AuthProvider extends ChangeNotifier {
   void logout() {
     ApiClient().clearToken();
     user = null;
+    // Limpiar token persistente
+    SharedPreferences.getInstance().then((prefs) => prefs.remove('auth_token'));
     notifyListeners();
   }
 }

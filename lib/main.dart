@@ -11,18 +11,25 @@ import 'providers/review_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/settings_provider.dart';
 
-void main() {
-  runApp(const TruekApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Crear AuthProvider e intentar restaurar sesión antes de iniciar la app
+  final authProvider = AuthProvider();
+  await authProvider.tryAutoLogin();
+
+  runApp(TruekApp(initialAuthProvider: authProvider));
 }
 
 class TruekApp extends StatelessWidget {
-  const TruekApp({super.key});
+  final AuthProvider initialAuthProvider;
+  const TruekApp({super.key, required this.initialAuthProvider});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider<AuthProvider>.value(value: initialAuthProvider),
         ChangeNotifierProvider(create: (_) => ListingProvider()),
         ChangeNotifierProvider(create: (_) => TradeProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
@@ -37,7 +44,9 @@ class TruekApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.light,
-            initialRoute: AppRoutes.login,
+            initialRoute: initialAuthProvider.isLoggedIn
+                ? AppRoutes.home
+                : AppRoutes.login,
             routes: AppRoutes.routes,
           );
         },

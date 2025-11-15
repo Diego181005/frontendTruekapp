@@ -9,14 +9,12 @@ class AppTheme {
       primary: AppColors.primary,
       secondary: AppColors.secondary,
       surface: AppColors.surface,
-      background: AppColors.background,
       error: AppColors.errorColor,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onSurface: AppColors.secondary,
-      onBackground: AppColors.secondary,
     ),
-    
+
     // Tipografía global con Inter
     textTheme: TextTheme(
       displayLarge: GoogleFonts.inter(
@@ -60,11 +58,11 @@ class AppTheme {
         color: AppColors.primary,
       ),
     ),
-    
+
     // Fondo
     scaffoldBackgroundColor: AppColors.background,
     useMaterial3: true,
-    
+
     // InputDecorationTheme para inputs consistentes
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -106,35 +104,27 @@ class AppTheme {
         color: AppColors.errorColor,
       ),
     ),
-    
+
     // Tema de ElevatedButton
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 2,
-        textStyle: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
-    
+
     // Tema de TextButton
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
-        textStyle: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     ),
-    
+
     // AppBarTheme
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
@@ -154,11 +144,9 @@ class AppTheme {
       primary: AppColors.primary,
       secondary: AppColors.secondary,
       surface: Color(0xFF1F2937),
-      background: Color(0xFF111827),
       error: AppColors.errorColor,
     ),
     useMaterial3: true,
     scaffoldBackgroundColor: const Color(0xFF111827),
   );
 }
-
